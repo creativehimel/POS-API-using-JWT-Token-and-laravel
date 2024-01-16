@@ -22,12 +22,11 @@ class JWTToken
         return $token;
     }
 
-    public static function verificToken($token)
+    public static function verifiyToken($token)
     {
         try {
             $key = env('APP_KEY');
             $decode = JWT::decode($token, new Key($key, 'HS256'));
-
             return $decode->email;
         } catch (Exception $e) {
             return 'unauthorized';

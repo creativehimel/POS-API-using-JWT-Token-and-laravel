@@ -95,7 +95,7 @@ class UserController extends Controller
                 User::where('email', $email)->update(['otp'=> $otp]);
                 return response()->json([
                     'status'=> 'success',
-                    'message'=> 'OTP sent successfully.'
+                    'message'=> '6 digit OTP code has been sent successfully.'
                 ],200);
 
             }else{
