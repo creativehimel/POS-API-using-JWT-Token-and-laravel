@@ -34,4 +34,18 @@ class JWTToken
         }
 
     }
+    public static function generatePasswordResetToken($email){
+        $key = env('APP_KEY');
+        $playload = [
+            'iss'=> 'pos-api-laravel',
+            'iat' => time(),
+            'exp'=> time() + 60*5,
+            'email'=> $email,
+            ];
+        $token = JWT::encode($playload,$key,'HS256');
+        return $token;
+    }
+    public static function verifyResetToken($token){
+        $key = env('APP_KEY');
+    }
 }
