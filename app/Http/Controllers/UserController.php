@@ -8,46 +8,55 @@ use App\Mail\OTPMail;
 use App\Helper\JWTToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
+
 
 class UserController extends Controller
 {
     public function userRegistration(Request $request)
     {
-        try {
-            // Request Validation
-            $request->validate([
-                'first_name' => 'required|string|min:3',
-                'last_name' => 'required|string|min:3',
-                'phone' => 'required|string|min:11',
-                'email' => 'required|string|unique:users',
-                'password' => 'required|string|min:6',
-            ]);
-
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required|string|min:3',
+            'last_name' => 'required|string|min:3',
+            'phone' => 'required|string|min:11',
+            'email' => 'required|string|unique:users',
+            'password' => 'required|string|min:6',
+        ]);
+        if ($validator->fails()){
+            return response()->json([
+                'status' => 422,
+                'message'=> $validator->messages(),
+                ],422);
+        }else{
             // User Create Process
-            User::create($request->all());
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'User registration sucessfully.',
-            ], 200);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                $e->getMessage(),
-            ], 200);
+            $user = User::create($request->all());
+            if($user){
+                return response()->json([
+                    'status'=> 'success',
+                    'message'=> 'Registration successfully.'
+                    ],200);
+            }else{
+                return response()->json([
+                    'status'=> 500,
+                    'message'=> 'Something went wrong!'
+                    ],500);
+            }
         }
-
     }
 
     public function userLogin(Request $request)
     {
-        try {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|string|email',
+            'password' => 'required|string|min:6',
+        ]);
 
-            $request->validate([
-                'email' => 'required|string',
-                'password' => 'required|string|min:6',
-            ]);
+        if ($validator->fails()){
+            return response()->json([
+                'status' => 422,
+                'message'=> $validator->messages(),
+                ],422);
+        }else{
 
             $count = User::where('email', $request->email)
                 ->where('password', $request->password)
@@ -63,27 +72,24 @@ class UserController extends Controller
                 ], 200);
             } else {
                 return response()->json([
-                    'status' => 'error',
-                    'message' => 'Unauthorized user.',
-                ], 401);
+                    'status' => 'failed',
+                    'message' => 'Invalid credentials. Please enter right email or password.',
+                ], 200);
             }
-
-        } catch (Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage(),
-            ], 200);
         }
     }
 
     public function sentOTP(Request $request)
     {
-        try {
-
-            //Request field validate
-            $request->validate([
-                'email' => 'required|email'
-            ]);
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email'
+        ]);
+        if ($validator->fails()){
+            return response()->json([
+                'status' => 422,
+                'message'=> $validator->messages(),
+                ],422);
+        }else{
             $email= $request->email;
 
             //Generate 6 digit OTP
@@ -101,18 +107,23 @@ class UserController extends Controller
             }else{
                 return response()->json([
                     'status'=> 'error',
-                    'message'=> 'Unauthorized user',
+                    'message'=> 'User not found!!',
                     ], 200);
             }
-        } catch (Exception $e) {}
+        }
     }
     public function verifyOTP(Request $request)
     {
-        try {
-            $request->validate([
-                'email' => 'required|email',
-                'otp' => 'required|string',
-            ]);
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'otp' => 'required|string',
+        ]);
+        if ($validator->fails()){
+            return response()->json([
+                'status' => 422,
+                'message'=> $validator->messages(),
+                ],422);
+        }else{
             $email= $request->email;
             $otp = $request->otp;
             $count = User::where('email', $email)
@@ -123,7 +134,7 @@ class UserController extends Controller
                 User::where('email', $email)->update(['otp'=> 0]);
                 //Generate reset password token
                 $token = JWTToken::generatePasswordResetToken($email);
-                // 
+                //
                 return response()->json([
                     'status'=> 'success',
                     'message'=> 'OTP verification successfully.',
@@ -136,33 +147,51 @@ class UserController extends Controller
                     'message'=> 'Invalid OTP',
                     ], 200);
             }
-        } catch (Exception $e) {
-            return response()->json([
-                'status'=> 'error',
-                'message'=> $e->getMessage()
-                ], 200);
         }
-
     }
 
     public function resetPassword(Request $request)
     {
-        try {
-            $request->validate([
-                'password' => 'required|confirmed'
-            ]);
+        $validator = Validator::make($request->all(), [
+            'password' => 'required|confirmed'
+        ]);
+        if ($validator->fails()){
+            return response()->json([
+                'status' => 422,
+                'message'=> $validator->messages(),
+                ],422);
+        }else{
             $email = $request->header('email');
             $password = $request->password;
-            User::where('email', $email)->update(['password'=> $password]);
-            return response()->json([
-                'status'=> 'success',
-                'message'=> 'Password reset successfully'
-                ],200);
-        } catch (Exception $e) {
-            return response()->json([
-                'status'=> 'error',
-                'message'=> "Something went wrong!"
-                ], 200);
+            $result = User::where('email', $email)->update(['password'=> $password]);
+            if($result){
+                return response()->json([
+                    'status'=> 'success',
+                    'message'=> 'Password reset successfully.'
+                    ],200);
+            }else{
+                return response()->json([
+                    'status'=> 'error',
+                    'message'=> 'Something went wrong!'
+                    ],500);
+            }
         }
+        // try {
+        //     $request->validate([
+        //         'password' => 'required|confirmed'
+        //     ]);
+        //     $email = $request->header('email');
+        //     $password = $request->password;
+        //     User::where('email', $email)->update(['password'=> $password]);
+        //     return response()->json([
+        //         'status'=> 'success',
+        //         'message'=> 'Password reset successfully'
+        //         ],200);
+        // } catch (Exception $e) {
+        //     return response()->json([
+        //         'status'=> 'error',
+        //         'message'=> "Something went wrong!"
+        //         ], 200);
+        // }
     }
 }

@@ -25,8 +25,9 @@ class TokenVerificationMiddleware
             ], 401);
         }else{
             $request->headers->set('email', $result);
+            //$request->headers->set('user_id', $result->id);
             return $next($request);
         }
-        
+
     }
 }
