@@ -21,7 +21,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::post('/register', [UserController::class, 'userRegistration']);
 Route::post('/login', [UserController::class, 'userLogin']);
+//Route::post('/logout', [UserController::class, 'userLogout']);
 Route::post('/send-otp', [UserController::class, 'sentOTP']);
 Route::post('/verify-otp', [UserController::class, 'verifyOTP']);
 Route::post('/reset-password', [UserController::class, 'resetPassword'])->middleware('token.verification');
+Route::get('/user/profile', [UserController::class, 'getUserProfile'])->middleware('token.verification');
+Route::post('/user/edit-profile', [UserController::class, 'updateUserProfile'])->middleware('token.verification');
 

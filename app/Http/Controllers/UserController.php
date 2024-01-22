@@ -60,11 +60,10 @@ class UserController extends Controller
 
             $count = User::where('email', $request->email)
                 ->where('password', $request->password)
-                ->count();
+                ->select('id')->first();
 
-            if ($count == 1) {
-                $token = JWTToken::generateToken($request->email);
-
+            if ($count !== null) {
+                $token = JWTToken::generateToken($request->email, $count->id);
                 return response()->json([
                     'status' => 'success',
                     'message' => 'User Login successfully',
@@ -78,6 +77,10 @@ class UserController extends Controller
             }
         }
     }
+
+//    public function userLogout(){
+//        return redirect('/login')->cookie('token', '', -1);
+//    }
 
     public function sentOTP(Request $request)
     {
@@ -176,22 +179,49 @@ class UserController extends Controller
                     ],500);
             }
         }
-        // try {
-        //     $request->validate([
-        //         'password' => 'required|confirmed'
-        //     ]);
-        //     $email = $request->header('email');
-        //     $password = $request->password;
-        //     User::where('email', $email)->update(['password'=> $password]);
-        //     return response()->json([
-        //         'status'=> 'success',
-        //         'message'=> 'Password reset successfully'
-        //         ],200);
-        // } catch (Exception $e) {
-        //     return response()->json([
-        //         'status'=> 'error',
-        //         'message'=> "Something went wrong!"
-        //         ], 200);
-        // }
+    }
+
+    public function getUserProfile(Request $request){
+        $email = $request->header('email');
+        $userDetails = User::where('email', $email)->first();
+        return response()->json([
+            'status' => 'success',
+            'data' => $userDetails
+        ], 200);
+    }
+
+    public function updateUserProfile(Request $request){
+        $email = $request->header('email');
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required|string|min:3',
+            'last_name' => 'required|string|min:3',
+            'phone' => 'required|string|min:11',
+        ]);
+
+        if ($validator->fails()){
+            return response()->json([
+                'status' => 422,
+                'message'=> $validator->messages(),
+            ],422);
+        }else{
+            $user = User::where('email', $email)->update([
+                'first_name' => $request->first_name,
+                'last_name' => $request->last_name,
+                'phone' => $request->phone,
+                'password' => $request->password
+            ]);
+
+            if($user){
+                return response()->json([
+                    'status'=> 'success',
+                    'message'=> 'User profile updated successfully.'
+                ],200);
+            }else{
+                return response()->json([
+                    'status'=> 500,
+                    'message'=> 'Something went wrong!'
+                ],500);
+            }
+        }
     }
 }

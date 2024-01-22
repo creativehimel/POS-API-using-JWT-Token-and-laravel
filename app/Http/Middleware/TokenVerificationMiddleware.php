@@ -20,12 +20,12 @@ class TokenVerificationMiddleware
         $result = JWTToken::verifiyToken($token);
         if ($result == 'unauthorized') {
             return response()->json([
-                'status'=> 'error',
-                'message'=> 'Unauthorized',
+                'status'=> 401,
+                'message'=> 'Unauthorized User.',
             ], 401);
         }else{
-            $request->headers->set('email', $result);
-            //$request->headers->set('user_id', $result->id);
+            $request->headers->set('email', $result->email);
+            $request->headers->set('id', $result->id);
             return $next($request);
         }
 

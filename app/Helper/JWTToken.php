@@ -8,7 +8,7 @@ use Firebase\JWT\Key;
 
 class JWTToken
 {
-    public static function generateToken($email): string
+    public static function generateToken($email, $id): string
     {
         $key = env('APP_KEY');
         $playload = [
@@ -16,29 +16,29 @@ class JWTToken
             'iat' => time(),
             'exp' => time() + 60 * 60,
             'email' => $email,
+            'id' => $id
         ];
         $token = JWT::encode($playload, $key, 'HS256');
 
         return $token;
     }
 
-    public static function verifiyToken($token):string
+    public static function verifiyToken($token):string|object|array
     {
-        $key = env('APP_KEY');
-        $decode = JWT::decode($token, new Key($key, 'HS256'));
-        if (!$decode) {
-            return 'unauthorized';
+        if($token == null){
+            return response()->json([
+                'status'=> 401,
+                'message'=> 'Unauthorized User.',
+            ], 401);
         }else{
-            return $decode->email;
+            $key = env('APP_KEY');
+            $decode = JWT::decode($token, new Key($key, 'HS256'));
+            if (!$decode) {
+                return 'unauthorized';
+            }else{
+                return $decode;
+            }
         }
-
-        // try {
-
-        //     return $decode->email;
-        // } catch (Exception $e) {
-        //     return 'unauthorized';
-        // }
-
     }
     public static function generatePasswordResetToken($email):string
     {
@@ -48,6 +48,7 @@ class JWTToken
             'iat' => time(),
             'exp' => time() + 60 * 5,
             'email' => $email,
+            'id' => '0'
             ];
         $token = JWT::encode($playload,$key,'HS256');
         return $token;
